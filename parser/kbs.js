@@ -1,7 +1,7 @@
 const Parser = require('./common');
 const request = require('request');
 const cheerio = require('cheerio');
-const Iconv = require('iconv').Iconv;
+const iconv = require('iconv-lite');
 
 class Kbs extends Parser {
   constructor(refer) {
@@ -10,7 +10,7 @@ class Kbs extends Parser {
   }
 
   async setInsertSql(mappingkey) {
-    const defineRefer = this.refer.startsWith('http') ? this.refer : 'http://' + this.refer;
+    const defineRefer = {encoding:null, method:'get', url:this.refer.startsWith('http') ? this.refer : 'http://' + this.refer};
     const getSql = (err, response, html) => {
       // html utf8로 추출
       const iconv = new Iconv(`UTF-8`, `UTF-8//translit//ignore`);
@@ -22,6 +22,7 @@ class Kbs extends Parser {
       this.section = $('title').text().split('>')[2].replace(' | KBSNEWS', '').replace(/\s/gi, "");
       this.author = $('meta[name=\'twitter:creator\']').attr('content');
       this.context = $('#cont_newstext').text().replace(/\s/gi, "");
+      this.context = this.context.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
 
       this.sql_insert = `insert into referrer_info (referrer, domain, mappingkey, title, description, image, keywords, published_time, updated_time, section, author, context) values('${this.refer}','news.kbs.co.kr','${mappingkey}','${this.title}','${this.description}','${this.image}','${this.keywords}','${this.p_time}','${this.u_time}','${this.section}','${this.author}' , '${this.context}')`;
     };

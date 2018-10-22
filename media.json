@@ -1,0 +1,26 @@
+[
+  {
+    "domain": "asiae",
+    "module": "Asiae"
+  },
+  {
+    "domain": "mk",
+    "module": "Mk"
+  },
+  {
+    "domain": "yonhap",
+    "module": "Yonhap"
+  },
+  {
+    "domain": "kmib",
+    "module": "Kmib"
+  },
+  {
+    "domain": "sbs",
+    "module": "Sbs"
+  },
+  {
+    "domain": "kbs",
+    "module": "Kbs"
+  }
+]

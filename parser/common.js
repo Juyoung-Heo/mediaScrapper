@@ -7,7 +7,7 @@
 // }
 const request = require('request');
 const cheerio = require('cheerio');
-const Iconv = require('iconv').Iconv;
+const iconv = require('iconv-lite');
 
 class Parser {
   constructor(refer) {
@@ -16,7 +16,7 @@ class Parser {
 
   // crawling
   crawling(ref) {
-    const defineRefer = ref.startsWith('http') ? ref : 'http://' + ref;
+    const defineRefer = {encoding:null, method:'get', url:ref.startsWith('http') ? ref : 'http://' + ref};
     request(defineRefer, function (err, response, html) {
       // encode 추출
       let $ = cheerio.load(html);
@@ -24,9 +24,7 @@ class Parser {
       const encode = encoding ? encoding.split('charset=')[1] : 'UTF-8';
 
       // html 추출(+encode 처리)
-      const iconv = new Iconv(`${encode}`, `UTF-8//translit//ignore`);
-      const iconvBuffer = new Buffer(html, 'binary');
-      const htmlDoc = iconv.convert(iconvBuffer).toString('utf-8');
+      const htmlDoc = iconv.decode(new Buffer(html), `${encode}`);
       $ = cheerio.load(htmlDoc);
 
       this.title = $('meta[property=\'og:title\']').attr('content');
@@ -36,13 +34,6 @@ class Parser {
       this.section = $('meta[property=\'article:section\']').attr('content');
     });
   }
-
-  //
-
-
-  // get
-
-
 }
 
 module.exports = Parser;

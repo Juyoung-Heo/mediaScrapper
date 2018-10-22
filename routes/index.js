@@ -1,13 +1,9 @@
 const express = require('express');
 const asyncify = require('express-asyncify');
 const router = asyncify(express.Router());
-const Iconv = require('iconv').Iconv;
 
 const fs = require('fs');
-const cheerio = require('cheerio');
 const mysql = require('promise-mysql');
-const request = require('request');
-const async = require('async');
 const parser = require('../parser/init');
 
 let judyConn;
@@ -37,29 +33,28 @@ router.get('/api/refer', async (req, res) => {
   const refer = req.query.refer.replace('https://', '').replace('http://', '');
   const mappingkey_select = `select * from referrer_info where referrer = '${refer}'`;
   const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
-  parsingInfo = getParsingInfo(refer);
+  const getmodule = getModuleName(refer);
   const mappingkey_result = await judyConn.query(mappingkey_select);
   const lastId_select = `select * from referrer_info order by id desc limit 1`;
   let lastId_result = await judyConn.query(lastId_select);
   const newId = parseInt(lastId_result[0].id) + 1;
   mappingkey = base62.encode(newId);
 
-  const press = "Mk";
-  const news = new parser[press](defineRefer);
+  const media = getmodule;
+  const news = new parser[media](defineRefer);
 
   if (mappingkey_result.length > 0) {
     console.log(mappingkey_result[0].mappingkey);
     mappingkey = mappingkey_result[0].mappingkey;
     res.send(mappingkey);
   } else {
-    news.crawling(defineRefer);
-    news.setInsertSql(mappingkey)
-      .then(function() {
-        console.log(news.InsertSql);
-      })
-      .catch(function(err){
-        console.log(err.message);
-      })
+    await news.crawling(defineRefer);
+    await news.setInsertSql(mappingkey);
+    const sql_insert = await news.InsertSql;
+    // await judyConn.query(sql_insert, function (err, result) {
+    //   if (err) throw err;
+    //   console.log("1 record inserted");
+    // });
     res.end();
   }
 
@@ -67,12 +62,11 @@ router.get('/api/refer', async (req, res) => {
   // res.send(mappingkey);
 });
 
-const parsingInfoFile = JSON.parse(fs.readFileSync('./scrapper/parsingInfo.json', {encoding: 'utf8'}));
-const getParsingInfo = function (refer) {
-  return parsingInfoFile.find(info => refer.indexOf(info.domain) !== -1);
-};
-let referrer, domain, mappingkey, title, description, image, keywords, p_time, u_time, section, author, select_result;
-let parsingInfo;
+const getModuleFile = JSON.parse(fs.readFileSync('./scrapper/media.json', {encoding: 'utf-8'}));
+const getModuleName = function(refer){
+  return getModuleFile.find(module => refer.indexOf(module.domain) !== -1);
+}
+let mappingkey;
 const base62 = {
   charset: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     .split(''),
