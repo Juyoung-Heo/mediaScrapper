@@ -1,4 +1,8 @@
 module.exports = {
-  Kbs : require("../parser/kbs"),
-  Sbs : require("../parser/sbs")
+  Asiae : require("../parser/asiae"),
+  Mk : require("../parser/mk"),
+  Yonhap : require("../parser/yonhap"),
+  Kmib: require("../parser/kmib"),
+  Sbs : require("../parser/sbs"),
+  Kbs : require("../parser/kbs")
 }

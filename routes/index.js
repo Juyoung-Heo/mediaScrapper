@@ -10,6 +10,8 @@ const request = require('request');
 const async = require('async');
 const parser = require('../parser/init');
 
+let judyConn;
+
 const dbCon = async () => {
   judyConn = await mysql.createConnection({
     host: '52.78.97.180',
@@ -17,8 +19,13 @@ const dbCon = async () => {
     password: 'ciziondb*0707!',
     database: 'judy'
   });
-};
-dbCon();
+}
+
+try {
+  dbCon();
+} catch (err) {
+  console.error(err);
+}
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
@@ -32,79 +39,40 @@ router.get('/api/refer', async (req, res) => {
   const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
   parsingInfo = getParsingInfo(refer);
   const mappingkey_result = await judyConn.query(mappingkey_select);
+  const lastId_select = `select * from referrer_info order by id desc limit 1`;
+  let lastId_result = await judyConn.query(lastId_select);
+  const newId = parseInt(lastId_result[0].id) + 1;
+  mappingkey = base62.encode(newId);
+
+  const press = "Mk";
+  const news = new parser[press](defineRefer);
+
   if (mappingkey_result.length > 0) {
     console.log(mappingkey_result[0].mappingkey);
     mappingkey = mappingkey_result[0].mappingkey;
     res.send(mappingkey);
   } else {
-    //request({url: defineRefer, encoding: null}, getResponse);
-    const lastId_select = `select * from referrer_info order by id desc limit 1`;
-    let lastId_result = await judyConn.query(lastId_select);
-    const newId = parseInt(lastId_result[0].id) + 1;
-    mappingkey = base62.encode(newId);
-
-    const press = "Kbs";
-    const news = new parser[press](defineRefer);
     news.crawling(defineRefer);
-    news.insertSql(mappingkey);
-    console.log(news.insertQuery);
+    news.setInsertSql(mappingkey)
+      .then(function() {
+        console.log(news.InsertSql);
+      })
+      .catch(function(err){
+        console.log(err.message);
+      })
+    res.end();
   }
+
   // mappingkey = mappingkey_result[0].mappingkey;
   // res.send(mappingkey);
-  res.end();
 });
 
 const parsingInfoFile = JSON.parse(fs.readFileSync('./scrapper/parsingInfo.json', {encoding: 'utf8'}));
 const getParsingInfo = function (refer) {
   return parsingInfoFile.find(info => refer.indexOf(info.domain) !== -1);
 };
-
 let referrer, domain, mappingkey, title, description, image, keywords, p_time, u_time, section, author, select_result;
 let parsingInfo;
-const getResponse = async (err, response, html) => {
-  const iconv = new Iconv(`${parsingInfo.encoding}`, `UTF-8//translit//ignore`);
-  const htmlDoc = iconv.convert(html).toString('utf-8');
-  const $ = cheerio.load(htmlDoc);
-  referrer = response.request.href.replace('https://', '').replace('http://', '');
-  domain = `${parsingInfo.domain}`;
-  title = $(`meta[${parsingInfo.title}]`).attr('content') ? $(`meta[${parsingInfo.title}]`).attr('content').replace(/\'/gi, "\\\'").replace(/\"/gi, "\\\"") : "";
-  description = $(`meta[${parsingInfo.description}]`).attr('content') ? $(`meta[${parsingInfo.description}]`).attr('content').replace(/\'/gi, "\\\'").replace(/\"/gi, "\\\"") : "";
-  image = $(`meta[${parsingInfo.image}]`).attr('content');
-  keywords = $(`meta[${parsingInfo.keywords}]`).attr('content');
-  p_time = $(`meta[${parsingInfo.p_time}]`).attr('content');
-  u_time = $(`meta[${parsingInfo.u_time}]`).attr('content');
-  section = $(`meta[${parsingInfo.section}]`).attr('content');
-  author = $(`meta[${parsingInfo.author}]`).attr('content');
-
-  const lastId_select = `select * from referrer_info order by id desc limit 1`;
-  let lastId_result = await judyConn.query(lastId_select);
-  const newId = parseInt(lastId_result[0].id) + 1;
-  mappingkey = base62.encode(newId);
-
-  //select
-  const sql_select = `select * from referrer_info where referrer = '${referrer}'`;
-  select_result = await judyConn.query(sql_select);
-  saveResponse();
-};
-
-function saveResponse() {
-  if (select_result.length > 0) {
-    //update
-    const sql_update = `update referrer_info set referrer = '${referrer}', domain = '${domain}', mappingkey = '${mappingkey}', title = '${title}', description = '${description}', image = '${image}', keywords = '${keywords}', published_time = '${p_time}', updated_time='${u_time}', section = '${section}', author='${author}' where id = '${select_result[0].id}'`;
-    judyConn.query(sql_update, function (err, result) {
-      if (err) throw err;
-      console.log("record(s) updated");
-    });
-  } else {
-    //insert
-    const sql_insert = `insert into referrer_info (referrer, domain, mappingkey, title, description, image, keywords, published_time, updated_time, section, author) values('${referrer}','${domain}','${mappingkey}','${title}','${description}','${image}','${keywords}','${p_time}','${u_time}','${section}','${author}')`;
-    judyConn.query(sql_insert, function (err, result) {
-      if (err) throw err;
-      console.log("1 record inserted");
-    });
-  }
-};
-
 const base62 = {
   charset: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     .split(''),

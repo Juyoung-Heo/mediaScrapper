@@ -3,7 +3,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const Iconv = require('iconv').Iconv;
 
-class Kbs extends Parser {
+class Kmib extends Parser {
   constructor(refer) {
     super();
     this.refer = refer;
@@ -19,9 +19,9 @@ class Kbs extends Parser {
       this.keywords = '';
       this.u_time = '';
       this.p_time = $('.date').text().replace('입력 ','');
-      this.section = $('title').text().split('>')[2].replace(' | KBSNEWS', '').trim();
+      this.section = $('title').text().split('>')[2].replace(' | KBSNEWS', '').replace(/\s/gi, "");
       this.author = $('meta[name=\'twitter:creator\']').attr('content');
-      this.context = $('#cont_newstext').text().trim();
+      this.context = $('#cont_newstext').text().replace(/\s/gi, "");
 
       this.sql_insert = `insert into referrer_info (referrer, domain, mappingkey, title, description, image, keywords, published_time, updated_time, section, author, context) values('${this.refer}','news.kbs.co.kr','${mappingkey}','${this.title}','${this.description}','${this.image}','${this.keywords}','${this.p_time}','${this.u_time}','${this.section}','${this.author}' , '${this.context}')`;
     };
@@ -34,4 +34,4 @@ class Kbs extends Parser {
   }
 }
 
-module.exports = Kbs;
+module.exports = Kmib;
