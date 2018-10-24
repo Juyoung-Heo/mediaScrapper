@@ -5,7 +5,6 @@ const router = asyncify(express.Router());
 const fs = require('fs');
 const mysql = require('promise-mysql');
 const parser = require('../parser/init');
-const rp = require('request-promise');
 
 let judyConn;
 
@@ -38,21 +37,23 @@ router.get('/api/refer', async (req, res) => {
 
   if (mappingkey_result.length > 0) {
     // 기존 정보 있을 때
-    console.log(mappingkey_result[0].mappingkey);
     mappingkey = mappingkey_result[0].mappingkey;
-    res.send(mappingkey);
   } else {
     // 기존 정보 없을 때
 
-    // request 에 던질 url 준비
-    const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
+    /**
 
-    // 언론사마다의 module 값 get
-    const getModuleFile = JSON.parse(fs.readFileSync('./scrapper/media.json', {encoding: 'utf-8'}));
-    const getModuleName = function(refer){
+     // 언론사마다의 module 값 get
+     const getModuleFile = JSON.parse(fs.readFileSync('./media.json', {encoding: 'utf-8'}));
+     const getModuleName = function(refer){
       return getModuleFile.find(module => refer.indexOf(module.domain) !== -1);
     }
-    const getmodule = getModuleName(refer);
+     const getmodule = getModuleName(refer);
+
+     const media = getmodule.module;
+     */
+      // request 에 던질 url 준비
+    const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
 
     // 새로운 mappingkey 생성
     const lastId_select = `select * from referrer_info order by id desc limit 1`;
@@ -61,23 +62,40 @@ router.get('/api/refer', async (req, res) => {
     mappingkey = base62.encode(newId);
 
     // 새로 크롤링
-    const media = getmodule.module;
+    const media = (findModule(refer)).capitalize();
     const news = new parser[media](defineRefer);
     await news.crawling(defineRefer);
     await news.setInsertSql(mappingkey);
-    const sql_insert = await news.InsertSql;
-    // db insert
-    // await judyConn.query(sql_insert, function (err, result) {
-    //   if (err) throw err;
-    //   console.log("1 record inserted");
-    // });
-    console.log(sql_insert);
-    res.end();
-  }
+    const sql_insert = news.InsertSql;
 
-  // mappingkey = mappingkey_result[0].mappingkey;
-  // res.send(mappingkey);
+    // db insert
+    await judyConn.query(sql_insert).then(function (rows) {
+      console.log("1 record inserted");
+    });
+  }
+  //res.send(mappingkey);
+  res.send({key: mappingkey});
 });
+String.prototype.capitalize = function () {
+  return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
+// 도메인 sld tld
+const stld = ['com', 'net', 'asia', 'info', 'biz', 'mobi', 'org', 'name', 'tel', 'co', 'kr', 'pe', '한국', 'ac', 'ae', 'af', 'ag', 'ai', 'am', 'at', 'au', 'be', 'br', 'bz', 'ca', 'cc', 'cd', 'ch', 'cm', 'cn', 'cx', 'de', 'dk', 'es', 'eu', 'fm', 'fr', 'gg', 'gs', 'hn', 'ht', 'il', 'im', 'in', 'io', 'it', 'je', 'jp', 'ki', 'la', 'lc', 'li', 'me', 'mn', 'ms', 'mu', 'mx', 'my', 'nl', 'nu', 'nz', 'pe', 'pl', 'pr', 'sb', 'sc', 'sg', 'sh', 'so', 'st', 'tc', 'tk', 'tl', 'tm', 'tw', 'tv', 'ua', 'uk', 'us', 'uy', 'vn', 'ws', 'qa', 'za'];
+let moduleName;
+
+function findModule(refer) {
+  // sub top 구분
+  const referArray = refer.split('.');
+  if (referArray[0] === 'www') {
+    moduleName = referArray[1];
+  } else if (stld.indexOf(referArray[1]) !== -1) {
+    moduleName = referArray[0];
+  } else {
+    moduleName = referArray[1];
+  }
+  return moduleName;
+}
 
 // mappingkey 생성
 let mappingkey;

@@ -1,17 +1,64 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Referrer</title>
-    <meta name="Author" content="Heojju">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=0,maximum-scale=10,user-scalable=yes">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-  </head>
-  <body>
-    <form method="get" action="/api/refer">
-      <span> referrer : </span><input type="text" name="refer">
-      <input type="submit" value="OK">
-    </form>
-  </body>
+<head>
+  <title>Referrer</title>
+  <meta name='Author' content='Heojju'>
+  <meta http-equiv='content-type' content='text/html; charset=utf-8'>
+  <meta name='viewport'
+        content='width=device-width,initial-scale=1.0,minimum-scale=0,maximum-scale=10,user-scalable=yes'>
+  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js'></script>
+  <script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+</head>
+<style>
+  #mappingkeyArea {
+    display: none;
+  }
+</style>
+<body>
+<form name='referForm' id='referForm'>
+  <div>
+    <span> referrer : </span><input type='text' name='refer' id='referInput'>
+    <input type='submit' value='OK'>
+  </div>
+  <div id='mappingkeyArea'>
+    Key : <span></span>
+  </div>
+</form>
+</body>
+<script>
+  const frm = $('#referForm');
+  frm.submit(function (e) {
+    e.preventDefault();
+    $.ajax({
+      type: 'GET',
+      url: '/api/refer',
+      data: frm.serialize()
+      // success: function(data) {
+      //   $('#mappingkeyArea').html(data[key]);
+      //   alert(data[key]);
+    }).done(function (data) {
+      $('#mappingkeyArea').show();
+      $('#mappingkeyArea span').html(data.key);
+    }).fail(function (err) {
+      console.error(err);
+    });
+  });
+
+  /**
+   $('#referForm').submit(function (e) {
+    $.ajax({
+      type: 'GET',
+      url: '/api/refer',
+      data: {refer: $('#referInput')[0].value},
+      success: function(data) {
+        $('#mappingkeyArea').html(data[key]);
+        alert(data[key]);
+      },
+      error:function(request,status,error){
+        alert("code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+      }
+    });
+  });
+   */
+</script>
 </html>

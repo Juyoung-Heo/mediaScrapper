@@ -8,8 +8,8 @@
     "module": "Mk"
   },
   {
-    "domain": "yonhap",
-    "module": "Yonhap"
+    "domain": "yonhapnews",
+    "module": "Yonhapnews"
   },
   {
     "domain": "kmib",

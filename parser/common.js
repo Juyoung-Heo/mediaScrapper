@@ -17,7 +17,7 @@ class Parser {
 
   // crawling
   async crawling(ref) {
-    const options = {
+    this.options = {
       encoding: null,
       method: 'get',
       url: this.refer.startsWith('http') ? this.refer : 'http://' + this.refer,
@@ -33,11 +33,13 @@ class Parser {
       },
       resolveWithFullResponse: true
     };
-    await rp(options)
+    await rp(this.options)
       .then(($) => {
         this.title = $('meta[property=\'og:title\']').attr('content');
+        this.title = this.title.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
         this.p_time = $('meta[property=\'article:published_time\']').attr('content');
         this.description = $('meta[property=\'og:description\']').attr('content');
+        this.description = this.description.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
         this.image = $('meta[property=\'og:image\']').attr('content');
         this.section = $('meta[property=\'article:section\']').attr('content');
       })
