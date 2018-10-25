@@ -97,7 +97,13 @@ function findModule(refer) {
   } else {
     moduleName = referArray[1];
   }
-  return moduleName;
+
+  //  Mk 일때
+  if(moduleName === "mk"){
+    return `mk${referArray[0].capitalize()}`;
+  }else{
+    return moduleName;
+  }
 }
 
 // mappingkey 생성

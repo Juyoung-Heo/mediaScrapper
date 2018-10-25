@@ -24,7 +24,7 @@ class Parser {
       transform: function (html) {
         // encode 추출
         let $ = cheerio.load(html);
-        let encoding = $('meta[http-equiv=\'Content-Type\']').attr('content') ? this.split('charset=')[1] : $('meta[charset]')[0].attribs.charset; // html4 : html5
+        let encoding = $('meta[http-equiv=\'Content-Type\']').attr('content') ? $('meta[http-equiv=\'Content-Type\']').attr('content').split('charset=')[1] : $('meta[charset]')[0].attribs.charset; // html4 : html5
         const encode = encoding ? encoding : 'UTF-8';
 
         // html 추출(+encode 처리)

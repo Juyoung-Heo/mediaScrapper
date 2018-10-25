@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const iconv = require('iconv-lite');
 const rp = require('request-promise');
 
-class Mk extends Parser {
+class MkBiz extends Parser {
   constructor(refer) {
     super();
     const referDefine = refer.replace('https://', '').replace('http://', '');
@@ -18,8 +18,8 @@ class Mk extends Parser {
         this.keywords = '';
         this.u_time = '';
         this.author = '';
-        this.p_time = $('meta[property=\'article:published\']').attr('content');
-        this.context = $('#article_body').text().replace(/\s/gi, "");
+        this.p_time = $('.tit h2').text().replace(/\s/gi, "");
+        this.context = $('.art_txt').text().replace(/\s/gi, "");
         this.context = this.context.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
       })
       .catch(function (err) {
@@ -36,4 +36,4 @@ class Mk extends Parser {
   }
 }
 
-module.exports = Mk;
+module.exports = MkBiz;
