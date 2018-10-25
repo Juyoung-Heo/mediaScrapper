@@ -33,9 +33,6 @@
       type: 'GET',
       url: '/api/refer',
       data: frm.serialize()
-      // success: function(data) {
-      //   $('#mappingkeyArea').html(data[key]);
-      //   alert(data[key]);
     }).done(function (data) {
       $('#mappingkeyArea').show();
       $('#mappingkeyArea span').html(data.key);

@@ -28,6 +28,21 @@ router.get('/', function (req, res, next) {
   res.render('index', {title: 'Express'});
 });
 
+// get mapping key show info
+router.get('/info/:key', async (req, res) => {
+  const infoSelect = `select * from referrer_info where mappingkey = '${req.params.key}'`;
+  const infoSelect_result = await judyConn.query(infoSelect);
+  res.json(infoSelect_result);
+});
+
+// get mapping key redirect
+router.get('/redirect/:key', async (req, res) => {
+  const redSelect = `select * from referrer_info where mappingkey = '${req.params.key}'`;
+  const redSelect_result = await judyConn.query(redSelect);
+  const redUri = redSelect_result[0].referrer.startsWith('http') ? redSelect_result[0].referrer : 'http://' + redSelect_result[0].referrer;
+  res.redirect(redUri);
+});
+
 //select
 router.get('/api/refer', async (req, res) => {
   // 기존 값 유무 확인
@@ -40,18 +55,6 @@ router.get('/api/refer', async (req, res) => {
     mappingkey = mappingkey_result[0].mappingkey;
   } else {
     // 기존 정보 없을 때
-
-    /**
-
-     // 언론사마다의 module 값 get
-     const getModuleFile = JSON.parse(fs.readFileSync('./media.json', {encoding: 'utf-8'}));
-     const getModuleName = function(refer){
-      return getModuleFile.find(module => refer.indexOf(module.domain) !== -1);
-    }
-     const getmodule = getModuleName(refer);
-
-     const media = getmodule.module;
-     */
       // request 에 던질 url 준비
     const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
 

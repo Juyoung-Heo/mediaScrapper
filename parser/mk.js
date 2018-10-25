@@ -18,6 +18,7 @@ class Mk extends Parser {
         this.keywords = '';
         this.u_time = '';
         this.author = '';
+        this.p_time = $('meta[property=\'article:published\']').attr('content');
         this.context = $('#article_body').text().replace(/\s/gi, "");
         this.context = this.context.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
       })
