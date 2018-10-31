@@ -18,7 +18,7 @@ class Kbs extends Parser {
         this.keywords = '';
         this.u_time = '';
         this.p_time = $('.date').text().replace('입력 ', '');
-        this.section = $('title').text().split('>')[2].replace(' | KBSNEWS', '').replace(/\s/gi, "");
+        this.section = $('title').text().split('>')[1].replace(' | KBSNEWS', '').replace(/\s/gi, "");
         this.author = $('meta[name=\'twitter:creator\']').attr('content');
         this.context = $('#cont_newstext').text().replace(/\s/gi, "");
         this.context = this.context.replace(/\'/gi, "\\\'").replace(/\"/gi, "\\\"");

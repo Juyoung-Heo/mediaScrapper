@@ -3,10 +3,15 @@ const asyncify = require('express-asyncify');
 const router = asyncify(express.Router());
 
 const fs = require('fs');
-const mysql = require('promise-mysql');
+const sha1 = require('sha1');
+const sha256 = require('sha256');
+// const mysql = require('promise-mysql');
+const mysql = require('mysql');
 const parser = require('../parser/init');
 
 let judyConn;
+let len = 7;
+let matchRefer = '123';
 
 const dbCon = async () => {
   judyConn = await mysql.createConnection({
@@ -19,6 +24,7 @@ const dbCon = async () => {
 
 try {
   dbCon();
+  console.log('connected');
 } catch (err) {
   console.error(err);
 }
@@ -55,14 +61,13 @@ router.get('/api/refer', async (req, res) => {
     mappingkey = mappingkey_result[0].mappingkey;
   } else {
     // 기존 정보 없을 때
-      // request 에 던질 url 준비
+    // request 에 던질 url 준비
     const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
 
     // 새로운 mappingkey 생성
-    const lastId_select = `select * from referrer_info order by id desc limit 1`;
-    let lastId_result = await judyConn.query(lastId_select);
-    const newId = parseInt(lastId_result[0].id) + 1;
-    mappingkey = base62.encode(newId);
+    keyDuplicate(refer);
+
+
 
     // 새로 크롤링
     const media = (findModule(refer)).capitalize();
@@ -72,9 +77,10 @@ router.get('/api/refer', async (req, res) => {
     const sql_insert = news.InsertSql;
 
     // db insert
-    await judyConn.query(sql_insert).then(function (rows) {
+    const dbInsert = await judyConn.query(sql_insert);
+    if(dbInsert){
       console.log("1 record inserted");
-    });
+    }
   }
   //res.send(mappingkey);
   res.send({key: mappingkey});
@@ -99,15 +105,25 @@ function findModule(refer) {
   }
 
   //  Mk 일때
-  if(moduleName === "mk"){
+  if (moduleName === "mk") {
     return `mk${referArray[0].capitalize()}`;
-  }else{
+  } else {
     return moduleName;
   }
 }
 
 // mappingkey 생성
 let mappingkey;
+
+function makeKey(refer, num) {
+  const shaRefer = sha256(refer);
+  const cutRefer = shaRefer.substr(0, num);
+  const parseRefer = parseInt(cutRefer, 16);
+  const baseRefer = base62.encode(parseRefer);
+
+  return baseRefer;
+}
+
 const base62 = {
   charset: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     .split(''),
@@ -126,4 +142,25 @@ const base62 = {
     prev + (base62.charset.indexOf(curr) * (62 ** i)), 0)
 };
 
+async function keyDuplicate(refer){
+  while (matchRefer !== '') {
+    matchRefer = '';
+    const newKey = makeKey(refer, len);
+    const testSelect = `select * from referrer_info where mappingkey = '${newKey}'`;
+    let rows = await judyConn.query(testSelect);
+    if (rows.length) {
+      matchRefer = rows[0].referrer;
+    }
+    if (matchRefer !== '') {
+      if (matchRefer !== refer) {
+        len++;
+      }
+    } else {
+      mappingkey = newKey;
+    }
+  }
+}
+
+
 module.exports = router;
+

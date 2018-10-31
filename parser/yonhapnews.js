@@ -19,7 +19,7 @@ class Yonhapnews extends Parser {
         this.u_time = '';
         this.section = $('meta[itemprop=\'genre\']').attr('content');
         this.author = $('meta[itemprop=\'publisher\']').attr('content');
-        this.context = $('#article').text().replace(/\s/gi, "");
+        this.context = $('.article').text().replace(/\s/gi, "");
         this.context = this.context.replace(/\'/gi,"\\\'").replace(/\"/gi,"\\\"");
       })
       .catch(function (err) {
