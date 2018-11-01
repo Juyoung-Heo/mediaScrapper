@@ -32,12 +32,19 @@
     $.ajax({
       type: 'GET',
       url: '/api/refer',
-      data: frm.serialize()
-    }).done(function (data) {
-      $('#mappingkeyArea').show();
-      $('#mappingkeyArea span').html(data.key);
-    }).fail(function (err) {
-      console.error(err);
+      data: frm.serialize(),
+      success: function(data) {
+        $('#mappingkeyArea').show();
+        $('#mappingkeyArea span').html(data.key);
+      },
+      error: function(request,status,error) {
+        alert("code:"+request.status+"\n"+"message:"+request.message+"\n"+"error:"+error);
+      }
+    // }).done(function (data) {
+    //   $('#mappingkeyArea').show();
+    //   $('#mappingkeyArea span').html(data.key);
+    // }).fail(function (err) {
+    //   console.error(err);
     });
   });
 

@@ -5,8 +5,8 @@ const router = asyncify(express.Router());
 const fs = require('fs');
 const sha1 = require('sha1');
 const sha256 = require('sha256');
-// const mysql = require('promise-mysql');
-const mysql = require('mysql');
+const mysql = require('promise-mysql');
+// const mysql = require('mysql');
 const parser = require('../parser/init');
 
 let judyConn;
@@ -31,59 +31,74 @@ try {
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
-  res.render('index', {title: 'Express'});
+  res.render('index', {title: ''});
 });
 
 // get mapping key show info
 router.get('/info/:key', async (req, res) => {
   const infoSelect = `select * from referrer_info where mappingkey = '${req.params.key}'`;
   const infoSelect_result = await judyConn.query(infoSelect);
-  res.json(infoSelect_result);
+  if(infoSelect_result.length) {
+    res.json(infoSelect_result);
+  }else{
+    //404error
+    res.status(404).json({message: '정보가 없습니다.'});
+  }
 });
 
 // get mapping key redirect
 router.get('/redirect/:key', async (req, res) => {
   const redSelect = `select * from referrer_info where mappingkey = '${req.params.key}'`;
   const redSelect_result = await judyConn.query(redSelect);
-  const redUri = redSelect_result[0].referrer.startsWith('http') ? redSelect_result[0].referrer : 'http://' + redSelect_result[0].referrer;
-  res.redirect(redUri);
+  if(redSelect_result.length) {
+    const redUri = redSelect_result[0].referrer.startsWith('http') ? redSelect_result[0].referrer : 'http://' + redSelect_result[0].referrer;
+    res.redirect(redUri);
+  }else{
+    //404error
+    res.status(404).json({message: '정보가 없습니다.'});
+  }
 });
 
 //select
 router.get('/api/refer', async (req, res) => {
-  // 기존 값 유무 확인
-  const refer = req.query.refer.replace('https://', '').replace('http://', '');
-  const mappingkey_select = `select * from referrer_info where referrer = '${refer}'`;
-  const mappingkey_result = await judyConn.query(mappingkey_select);
+  //400error
+  const expUrl = /(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g;
+  if(!expUrl.test(req.query.refer)){
+    res.status(400).json({message: '정확한 url을 넣어주세요.'});
+  }else {
+    // 기존 값 유무 확인
+    const refer = req.query.refer.replace('https://', '').replace('http://', '');
+    const mappingkey_select = `select * from referrer_info where referrer = '${refer}'`;
+    const mappingkey_result = await judyConn.query(mappingkey_select);
 
-  if (mappingkey_result.length > 0) {
-    // 기존 정보 있을 때
-    mappingkey = mappingkey_result[0].mappingkey;
-  } else {
-    // 기존 정보 없을 때
-    // request 에 던질 url 준비
-    const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
+    if (mappingkey_result.length > 0) {
+      // 기존 정보 있을 때
+      mappingkey = mappingkey_result[0].mappingkey;
+    } else {
+      // 기존 정보 없을 때
+      // request 에 던질 url 준비
+      const defineRefer = refer.startsWith('http') ? refer : 'http://' + refer;
 
-    // 새로운 mappingkey 생성
-    keyDuplicate(refer);
+      // 새로운 mappingkey 생성
+      keyDuplicate(refer);
 
 
+      // 새로 크롤링
+      const media = (findModule(refer)).capitalize();
+      const news = new parser[media](defineRefer);
+      await news.crawling(defineRefer);
+      await news.setInsertSql(mappingkey);
+      const sql_insert = news.InsertSql;
 
-    // 새로 크롤링
-    const media = (findModule(refer)).capitalize();
-    const news = new parser[media](defineRefer);
-    await news.crawling(defineRefer);
-    await news.setInsertSql(mappingkey);
-    const sql_insert = news.InsertSql;
-
-    // db insert
-    const dbInsert = await judyConn.query(sql_insert);
-    if(dbInsert){
-      console.log("1 record inserted");
+      // db insert
+      const dbInsert = await judyConn.query(sql_insert);
+      if (dbInsert) {
+        console.log("1 record inserted");
+      }
     }
+    //res.send(mappingkey);
+    res.send({key: mappingkey});
   }
-  //res.send(mappingkey);
-  res.send({key: mappingkey});
 });
 String.prototype.capitalize = function () {
   return this.charAt(0).toUpperCase() + this.slice(1);
@@ -160,7 +175,6 @@ async function keyDuplicate(refer){
     }
   }
 }
-
 
 module.exports = router;
 
